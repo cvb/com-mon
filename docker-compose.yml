@@ -1,0 +1,33 @@
+version: "2"
+services:
+  cm:
+    build: .
+    depends_on:
+      - neo4j
+    environment:
+      NEO4J_URL: http://neo4j:7474/db/data
+      UPDATES: /var/updates
+    volumes:
+      - updates:/var/updates
+      # hack that will allow to create .nrepl-port on host and code reload
+      - .:/var/app
+    ports:
+      - 59666:59666
+    command:
+      boot dev-server -p 59666 -b 0.0.0.0 wait
+
+  neo4j:
+    image: neo4j/neo4j
+    environment:
+      - NEO4J_AUTH=none
+    ports:
+      # http
+      - 7474:7474
+      # https
+      - 7473:7473
+    volumes:
+      - neo4j-data:/data
+
+volumes:
+  updates:
+  neo4j-data:

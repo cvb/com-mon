@@ -14,7 +14,7 @@ services:
     ports:
       - 59666:59666
     command:
-      boot dev-server -p 59666 -b 0.0.0.0 wait
+      boot dev-server -p 59666 -b 127.0.0.1 wait
 
   neo4j:
     image: neo4j/neo4j

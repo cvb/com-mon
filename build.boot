@@ -9,7 +9,11 @@
                   [environ "1.0.2"]
                   [adzerk/boot-jar2bin "1.1.0" :scope "test"]
                   [org.clojure/tools.cli "0.3.3"]
-                  [clj-time "0.11.0"])
+                  [clj-time "0.11.0"]
+                  [uswitch/lambada "0.1.0"]
+                  [amazonica "0.3.57" :exclusions [com.amazonaws/aws-java-sdk]]
+                  [com.amazonaws/aws-java-sdk-core "1.10.75"]
+                  [com.amazonaws/aws-java-sdk-s3 "1.10.75"]])
 
 (require '[adzerk.boot-jar2bin :refer :all])
 
@@ -32,7 +36,7 @@
 
 (swap! boot.repl/*default-middleware*
   conj 'cider.nrepl/cider-middleware
-       'refactor-nrepl.middleware/wrap-refactor)
+  'refactor-nrepl.middleware/wrap-refactor)
 
 (deftask dev-server
   [b bind ADDR str "The address server listens on."
@@ -43,3 +47,6 @@
     :bind bind
     :handler 'cider.nrepl/cider-nrepl-handler
     :server true))
+
+(deftask awsl []
+  (comp (aot) (pom) (uber) (jar)))

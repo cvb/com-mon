@@ -4,7 +4,8 @@
             [org.httpkit.client       :as http]
             [cheshire.core            :as json]
             [clojure.core.match       :as m]
-            [com-mon.threader         :as t]))
+            [com-mon.threader         :as t]
+            [clojure.zip              :as z]))
 
 (def base-url "https://api.vk.com/method")
 
@@ -40,7 +41,6 @@
 
 (defn get
   ([method params opts]
-   (println "getting" method params opts)
    (t/fail-> (get-raw method (merge params {:v "5.50"}) opts)
      parse-response
      process-vk-resp
@@ -49,45 +49,49 @@
   ([method params] (get method params {})))
 
 (defmacro defget
-  [name params]
-  (let [fname (-> name
-                s/lower-case
-                (s/replace "." "-")
-                (s/replace ":" "")
-                symbol)
-        args (->> (vals params) (filter symbol?) vec)]
-    `(defn ~fname
-       (~args
-        (~fname ~@args {}))
-       (~(conj args 'prms)
-        (get ~name (merge ~'prms ~params))))))
+  ([name params] `(defget ~name ~params ~(fn [v#] [:success v#])))
+  ([name params post-proc]
+   (let [fname (-> name
+                 s/lower-case
+                 (s/replace "." "-")
+                 (s/replace ":" "")
+                 symbol)
+         args (->> (vals params) (filter symbol?) vec)]
+     `(defn ~fname
+        (~args
+         (~fname ~@args {}))
+        (~(conj args 'prms)
+         (t/fail-> (get ~name (merge ~'prms ~params))
+           ~post-proc))))))
 
 (defget :groups.getById {:group_id name})
 
-(defget :wall.get {:owner_id owner-id})
+(defn items [resp] [:success (:items resp)])
 
-(defget :wall.getComments {:owner_id owner-id :post_id  post-id})
+(defget :wall.get {:owner_id owner-id} items)
+
+(defget :wall.getComments {:owner_id owner-id :post_id  post-id} items)
 
 (defget :likes.getList {:owner_id owner-id
                         :item_id  item-id
                         :type     "comment"
-                        :filter   "likes"})
+                        :filter   "likes"}
+  items)
 
-(defn l-likes [gid comment]
-  (t/fail-> (likes-getlist gid (:id comment))
-    ((fn [v] [:success {:comment comment :likes (-> v :items)}]))))
+(defn id-from-group [g] (-> g :id -))
 
-(defn l-comments [post]
-  (let [gid (:owner_id post)]
-    (if (> 0 (-> post :comments :count))
-      []
-      (t/fail-> (wall-getcomments gid (:id post))
-        ((fn [v] [:success
-                  {:post post
-                   :comments (map #(l-likes gid %) (:items v))}]))))))
+(defn node-type
+  [node]
+  (->> node keys (filter #(not= :children %)) first))
 
-(defn l-posts []
-  (t/fail-> (groups-getbyid "oldlentach")
-    ((fn [v] [:success (-> v first :id -)]))
-    wall-get
-    ((fn [v] [:success (map l-comments (:items v))]))))
+(defn parent
+  [loc type]
+  (if-let [up (z/up loc)]
+    (let [n (z/node up)]
+      (if (and n (not (sequential? n)) (= type (node-type (z/node up))))
+        (type n)
+        (recur up type)))))
+
+(defn group-id
+  [loc]
+  (-> (parent loc :group) id-from-group))

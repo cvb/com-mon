@@ -6,6 +6,11 @@
                  [:success v'] (f v')
                  [:fail _] v)))
 
+(def seq-fn (fn [f v] (apply concat (map f v))))
+
+(defn sf-fn [f v]
+  (seq-fn (partial fail-fn f) v))
+
 (defmacro threader-builder
   [bind-fn apply expr & forms]
   (loop [x expr, fs forms]
@@ -24,3 +29,6 @@
   [expr & forms]
   `(threader-builder fail-fn ->> ~expr ~@forms ))
 
+(defmacro sf->
+  [expr & forms]
+  `(threader-builder sf-fn -> ~expr ~@forms ))

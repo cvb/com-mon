@@ -61,3 +61,9 @@
   (cy/tquery conn
     "merge (n:updates) on create set n = {f} on match set n = {f}"
     {:f {:file fname}}))
+
+(defn make-idxs [conn]
+  (cy/tquery conn "create index on :user(id)")
+  (cy/tquery conn "create index on :comment(id)")
+  (cy/tquery conn "create index on :post(id)")
+  (cy/tquery conn "create index on :group(id)"))

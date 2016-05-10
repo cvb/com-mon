@@ -67,6 +67,7 @@
               reverse
               (take-while #(not= lastf %))
               reverse)]
+    (neo/make-idxs (neo/conn))
     (doseq [[n e] (map vector (range) all)]
       (println (+ 1 n) "of" (count all) e)
       (-> (s3/get-object :bucket-name :s-stuff :key e)

@@ -21,7 +21,8 @@
   pom {:project 'com-mon
        :version "0.1.0"}
   aot {:namespace '#{com-mon.main}}
-  jar {:main 'com-mon.main}
+  jar {:main 'com-mon.main
+       :file "com-mon.jar"}
   bin {:output-dir ".bin"})
 
 (deftask build []

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+docker-compose run cm com-mon core/get-vk-l-s3

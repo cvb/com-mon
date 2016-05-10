@@ -7,6 +7,8 @@ services:
     environment:
       NEO4J_URL: http://neo4j:7474/db/data
       UPDATES: /var/updates
+      AWS_ACCESS_KEY: $AWS_ACCESS_KEY
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
     volumes:
       - updates:/var/updates
       # hack that will allow to create .nrepl-port on host and code reload

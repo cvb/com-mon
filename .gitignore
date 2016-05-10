@@ -1,3 +1,5 @@
 .nrepl*
 .updates/*
 .bin/project
+.bin/com-mon
+target/*

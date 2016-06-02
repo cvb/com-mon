@@ -20,7 +20,7 @@
 (def vk-lentach-last-comments
   [{:group (fn [_] (vk/groups-getbyid "oldlentach"))
     :children
-    [{:post (fn [loc] (vk/wall-get (vk/group-id loc) {:count 100}))
+    [{:post (fn [loc] (vk/wall-get (vk/group-id loc) {:count 20}))
       :children
       [{:comment (fn [loc] (vk/wall-getcomments
                              (vk/group-id loc)
@@ -30,7 +30,7 @@
         [{:like (fn [loc] (vk/likes-getlist
                             (vk/group-id loc)
                             (-> (vk/parent loc :comment) :id)
-                            {:count 100}))}]}]}]}])
+                            {:count 1000}))}]}]}]}])
 
 (defn process-vk-fetched
   [data &{:keys [save-group save-post save-comment save-like]}]

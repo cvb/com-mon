@@ -5,41 +5,49 @@
             [cheshire.core            :as json]
             [clojure.core.match       :as m]
             [com-mon.threader         :as t]
-            [clojure.zip              :as z]))
+            [clojure.zip              :as z]
+            [taoensso.timbre :as log :refer [spy]]
+            [taoensso.timbre.profiling :as prof :refer [defnp]]))
 
 (def base-url "https://api.vk.com/method")
 
 (defn get-raw [method params opts]
   (let [url (str base-url "/" (name method))
-        resp (http/get url (merge opts {:query-params params}))]
+        prms (merge opts {:query-params params})
+        resp (prof/p method (http/get url prms))]
     (let [{:keys [status body error] :as resp} @resp]
+      (log/debug "Getting" url prms)
       (if error
-        [:fail {:message (str "Failed to get" method "with" error)
-                :type :get-failed
-                :error {:method method
-                        :params params
-                        :opts opts
-                        :response resp}}]
-        [:success body]))))
+        (log/spy :error
+          [:fail {:message (str "Failed to get" method "with" error)
+                  :type :get-failed
+                  :error {:method method
+                          :params params
+                          :opts opts
+                          :response resp}}])
+        (do (log/debug "Got url" url prms)
+            [:success body])))))
 
 (defn parse-response
   [s]
   (try
     [:success (json/parse-string s true)]
     (catch Exception e
-      [:fail {:message (.getMessage e)
-              :type :parse-failed
-              :error e}])))
+      (spy :error
+        [:fail {:message (.getMessage e)
+                :type :parse-failed
+                :error e}]))))
 
 (defn process-vk-resp
   [r]
   (if (:error r)
-    [:fail {:message (-> r :error :error_msg)
-            :error (:error r)
-            :type :processing-failed}]
+    (spy :error
+      [:fail {:message (-> r :error :error_msg)
+              :error (:error r)
+              :type :processing-failed}])
     [:success r]))
 
-(defn get
+(defnp get
   ([method params opts]
    (t/fail-> (get-raw method (merge params {:v "5.50"}) opts)
      parse-response

@@ -11,8 +11,11 @@
             [com-mon.vk :as vk]
             [com-mon.fetcher :as f]
             [com-mon.db.neo4j :as neo]
-            [amazonica.aws.s3 :as s3]))
+            [amazonica.aws.s3 :as s3]
+            [taoensso.timbre :as log]
+            [taoensso.timbre.profiling :as prof]))
 
+(log/merge-config! {:level :info})
 
 (def vk-lentach-last-comments
   [{:group (fn [_] (vk/groups-getbyid "oldlentach"))
@@ -69,10 +72,36 @@
               reverse)]
     (neo/make-idxs (neo/conn))
     (doseq [[n e] (map vector (range) all)]
-      (println (+ 1 n) "of" (count all) e)
+      (log/info (+ 1 n) "of" (count all) e)
       (-> (s3/get-object :bucket-name :s-stuff :key e)
         :input-stream
         slurp
         read-string
         update-neo4j-vk)
       (neo/set-vk-l-last (neo/conn) e))))
+
+(prof/defnp fetch-last-vk []
+  (let [[v fails] (f/run-sync vk-lentach-last-comments)]
+    (if-not (empty? fails)
+      (throw (ex-info "Some requests are failed" {:causes fails}))
+      v)))
+
+(defn store-vk-l [path g]
+  (let [time (tl/format-local-time (tl/local-now) :basic-date-time)
+        fname (str "vk-l-" time ".edn")
+        fullname (str path "/" fname)]
+    (clojure.pprint/pprint g (clojure.java.io/writer fullname))
+    fname))
+
+(defn store-vk-l-s3 []
+  (let [path "vk-l/updates"
+        bucket "s-stuff"
+        last (fetch-last-vk)
+        fname (store-vk-l "/tmp" last)
+        key (str path "/" fname)]
+    (prof/p :put-object
+      (s3/put-object
+        :bucket-name bucket
+        :key         key
+        :file        (str "/tmp/" fname)))
+    (log/info "Stored" key)))

@@ -13,7 +13,8 @@
                   [uswitch/lambada "0.1.0"]
                   [amazonica "0.3.57" :exclusions [com.amazonaws/aws-java-sdk]]
                   [com.amazonaws/aws-java-sdk-core "1.10.75"]
-                  [com.amazonaws/aws-java-sdk-s3 "1.10.75"]])
+                  [com.amazonaws/aws-java-sdk-s3 "1.10.75"]
+                  [com.taoensso/timbre "4.3.1"]])
 
 (require '[adzerk.boot-jar2bin :refer :all])
 

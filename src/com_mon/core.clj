@@ -61,10 +61,20 @@
       (throw (ex-info "Some requests are failed" {:causes fails}))
       v)))
 
+(defn list-all-objects
+  [request]
+  (let [response (s3/list-objects request)
+        next-request (assoc request :marker (:next-marker response))]
+    (concat
+      (:object-summaries response)
+      (if (:truncated? response)
+        (lazy-seq (list-all-objects next-request))
+        []))))
+
 (defn get-vk-l-s3 []
   (let [lastf (neo/get-vk-l-last (neo/conn))
-        all (->> (s3/list-objects :bucket-name :s-stuff :prefix "vk-l/updates")
-              :object-summaries
+        all (->> (list-all-objects
+                   {:bucket-name :s-stuff :prefix "vk-l/updates"})
               (map :key)
               sort
               reverse

@@ -1,18 +1,16 @@
 (ns com-mon.awsl
-  (:require [soc-fetch.core :as c]
+  (:require [com-mon.core :as c]
             [cheshire.core :as json]
             [uswitch.lambada.core :refer [deflambdafn]]
             [clojure.pprint :refer [pprint]]
             [clojure.java.io :as io]
-            [amazonica.aws.s3 :as s3]))
+            [amazonica.aws.s3 :as s3]
+            [taoensso.timbre :as log]))
 
 (deflambdafn awsl.StoreVkL
   [in out ctx]
-  (let [path "vk-l/updates"
-        bucket "s-stuff"
-        last (c/fetch-last-vk)
-        fname (c/store-vk-l "/tmp" last)]
-    (s3/put-object
-      :bucket-name bucket
-      :key         (str path "/" fname)
-      :file        (str "/tmp/" fname))))
+  (let [cfg (json/parse-string (slurp in) true)
+        log-level (or (some->> cfg :log :level keyword) :info)]
+    (log/with-level log-level
+      (log/info "Starting, level:" log-level)
+      (c/store-vk-l-s3))))

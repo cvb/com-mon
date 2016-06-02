@@ -21,7 +21,7 @@
 (task-options!
   pom {:project 'com-mon
        :version "0.1.0"}
-  aot {:namespace '#{com-mon.main}}
+  aot {:namespace '#{com-mon.main com-mon.awsl}}
   jar {:main 'com-mon.main
        :file "com-mon.jar"}
   bin {:output-dir ".bin"})
